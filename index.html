@@ -302,22 +302,23 @@ function toast(msg, d=3500) {
   setTimeout(() => t.classList.remove('show'), d);
 }
 
-// ── API Helper ────────────────────────────────
+// ── API Helper (all GET to avoid CORS) ────────
 async function api(action, data={}) {
   if (!SCRIPT_URL) { toast("⚠️ الرجاء تحديث رابط Apps Script في الكود"); return null; }
 
-  // GET actions
-  if (['getMembers','getSOS','ping'].includes(action)) {
-    const url = `${SCRIPT_URL}?action=${action}${data.code ? '&code='+data.code : ''}`;
-    const res = await fetch(url);
-    return await res.json();
-  }
-  // POST actions
-  const res = await fetch(SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action, ...data })
-  });
+  // Build query string from all params
+  const params = new URLSearchParams({ action, ...flattenData(data) });
+  const url = `${SCRIPT_URL}?${params.toString()}`;
+  const res = await fetch(url, { redirect: 'follow' });
   return await res.json();
+}
+
+function flattenData(obj) {
+  const flat = {};
+  for (const [k, v] of Object.entries(obj)) {
+    flat[k] = (typeof v === 'object') ? JSON.stringify(v) : String(v);
+  }
+  return flat;
 }
 
 // ── Generate IDs ──────────────────────────────
